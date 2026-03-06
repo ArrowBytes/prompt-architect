@@ -271,6 +271,74 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* --- NEW: EDUCATIONAL & FAQ SECTION --- */}
+          <div className="mt-32 mb-12 animate-in fade-in duration-700">
+            
+            {/* Section Header */}
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 mb-4">
+                Why Prompt Engineering Matters.
+              </h2>
+              <p className="text-zinc-400 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
+                Generative AI models are powerful, but they operate exactly like highly literal interns. If you give them vague instructions, you get generic, hallucinated, or unhelpful results. 
+              </p>
+            </div>
+
+            {/* 3-Pillar Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
+              <div className="bg-gradient-to-b from-white/5 to-transparent border border-white/10 rounded-2xl p-6 hover:border-cyan-500/30 transition-colors">
+                <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center mb-4 border border-cyan-500/20">
+                  <Terminal className="w-5 h-5 text-cyan-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">Absolute Precision</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">Stop hoping the AI guesses what you want. By explicitly defining the Persona and Format, you force the model to output exactly what you need on the very first try.</p>
+              </div>
+
+              <div className="bg-gradient-to-b from-white/5 to-transparent border border-white/10 rounded-2xl p-6 hover:border-indigo-500/30 transition-colors">
+                <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center mb-4 border border-indigo-500/20">
+                  <Lock className="w-5 h-5 text-indigo-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">Constraint Enforcement</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">The best way to control AI is by telling it what *not* to do. Setting hard constraints prevents AI from using corporate jargon or rambling off-topic.</p>
+              </div>
+
+              <div className="bg-gradient-to-b from-white/5 to-transparent border border-white/10 rounded-2xl p-6 hover:border-purple-500/30 transition-colors">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mb-4 border border-purple-500/20">
+                  <Zap className="w-5 h-5 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">Workflow Velocity</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">Instead of spending 20 minutes going back-and-forth arguing with ChatGPT, a perfectly architected prompt gets you production-ready code or copy instantly.</p>
+              </div>
+            </div>
+
+            {/* FAQ Accordion Style Box */}
+            <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-bl-full blur-3xl pointer-events-none"></div>
+              
+              <h3 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
+                <MessageSquare className="w-6 h-6 text-indigo-400" /> Frequently Asked Questions
+              </h3>
+              
+              <div className="space-y-6 relative z-10">
+                <div className="border-b border-white/10 pb-6">
+                  <h4 className="text-zinc-100 font-semibold mb-2">How does Prompt Architect actually work?</h4>
+                  <p className="text-sm text-zinc-400 leading-relaxed">We use a "meta-prompting" technique. When you type your messy idea, we send it to an AI model that has been specifically trained on Google's prompt engineering frameworks. It analyzes your intent and completely rewrites your idea into a highly structured format before you ever paste it into ChatGPT, Midjourney, or Sora.</p>
+                </div>
+                
+                <div className="border-b border-white/10 pb-6">
+                  <h4 className="text-zinc-100 font-semibold mb-2">Why do I need to choose Text, Image, or Video?</h4>
+                  <p className="text-sm text-zinc-400 leading-relaxed">Different AI models require entirely different instruction structures. LLMs (Text) need logic, context, and rules. Diffusion models (Image) need comma-separated keywords detailing lighting and camera lenses. Video generation models need continuous motion vectors and scene pacing. We switch our backend engine based on your selection.</p>
+                </div>
+
+                <div className="pt-2">
+                  <h4 className="text-zinc-100 font-semibold mb-2">Can I see prompts made by other people?</h4>
+                  <p className="text-sm text-zinc-400 leading-relaxed">Yes! If a user chooses to publish their prompt, it is sent to our global database. You can click the "Community" tab at the top of the page to browse, discover, and copy high-quality prompts engineered by other users.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* --- END EDUCATIONAL SECTION --- */}
+
               {output && (
                 <div className={`animate-in fade-in slide-in-from-bottom-8 duration-700 backdrop-blur-md bg-white/5 border border-white/10 border-l-4 rounded-3xl p-6 sm:p-8 ${mode === 'text' ? 'border-l-cyan-400' : mode === 'image' ? 'border-l-pink-400' : 'border-l-purple-400'}`}>
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
