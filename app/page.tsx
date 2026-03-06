@@ -28,6 +28,11 @@ export default function Home() {
   const [session, setSession] = useState<any>(null);
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
+  
+  // --- NEW: TYPING EFFECT STATES ---
+  const [displayedOutput, setDisplayedOutput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   
@@ -44,7 +49,6 @@ export default function Home() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [currentTip, setCurrentTip] = useState(0);
 
-  // --- NEW SETTINGS STATE ---
   const [isDark, setIsDark] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -61,7 +65,7 @@ export default function Home() {
       oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.05);
       
-      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); // Volume
+      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); 
       gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
       
       oscillator.connect(gainNode);
@@ -91,6 +95,32 @@ export default function Home() {
 
   useEffect(() => { setQ1(""); setQ2(""); setCurrentTip(0); }, [mode]);
 
+  // --- NEW: TYPING EFFECT HOOK ---
+  useEffect(() => {
+    if (!output) {
+      setDisplayedOutput("");
+      setIsTyping(false);
+      return;
+    }
+
+    setIsTyping(true);
+    setDisplayedOutput("");
+    let i = 0;
+    
+    // Speed: Lower number = faster typing (10ms is fast and snappy)
+    const typingInterval = setInterval(() => {
+      if (i < output.length) {
+        setDisplayedOutput((prev) => prev + output.charAt(i));
+        i++;
+      } else {
+        clearInterval(typingInterval);
+        setIsTyping(false);
+      }
+    }, 10);
+
+    return () => clearInterval(typingInterval);
+  }, [output]);
+
   const fetchHistory = async () => {
     if (!session) return;
     const { data } = await supabase.from('prompts').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(20);
@@ -105,8 +135,10 @@ export default function Home() {
   const handleGenerate = async () => {
     playClickSound();
     if (!input || !session) return;
+    
     setIsLoading(true);
     setIsCurrentPublic(false);
+    setOutput(""); // Reset output to trigger typing effect on new generation
     
     let extraContext = "";
     if (mode === 'image') extraContext = `Style/Medium: ${q1}. Lighting/Mood: ${q2}.`;
@@ -143,7 +175,6 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // --- Dynamic Theme Variables ---
   const themeBg = isDark ? "bg-[#050505]" : "bg-slate-50";
   const themeTextMain = isDark ? "text-white" : "text-slate-900";
   const themeTextMuted = isDark ? "text-zinc-400" : "text-slate-500";
@@ -155,29 +186,12 @@ export default function Home() {
       <div className={`min-h-screen ${themeBg} transition-colors duration-500 flex items-center justify-center p-6 relative overflow-hidden`}>
         <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-400/30'} blur-[150px] rounded-full`}></div>
         <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-400/30'} blur-[150px] rounded-full`}></div>
-        
         <div className={`w-full max-w-md backdrop-blur-xl ${isDark ? 'bg-black/40 border-white/10' : 'bg-white/70 border-white/50 shadow-2xl'} border rounded-3xl p-8 relative z-10`}>
           <div className="flex flex-col items-center gap-3 mb-8">
-            <div className="p-3 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-2xl">
-              <Terminal className="w-8 h-8 text-white" />
-            </div>
+            <div className="p-3 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-2xl"><Terminal className="w-8 h-8 text-white" /></div>
             <h1 className={`text-2xl font-bold ${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-cyan-300' : 'text-slate-900'}`}>PromptArchitect</h1>
           </div>
-          <Auth
-            supabaseClient={supabase}
-            appearance={{ 
-              theme: ThemeSupa,
-              variables: { default: { colors: { 
-                brand: '#4f46e5', brandAccent: '#4338ca', 
-                inputText: isDark ? 'white' : 'black', 
-                inputBackground: isDark ? '#18181b' : 'white', 
-                inputBorder: isDark ? '#27272a' : '#cbd5e1', 
-                inputBorderFocus: '#22d3ee' 
-              } } }
-            }}
-            theme={isDark ? "dark" : "default"}
-            providers={[]} 
-          />
+          <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa, variables: { default: { colors: { brand: '#4f46e5', brandAccent: '#4338ca', inputText: isDark ? 'white' : 'black', inputBackground: isDark ? '#18181b' : 'white', inputBorder: isDark ? '#27272a' : '#cbd5e1', inputBorderFocus: '#22d3ee' } } } }} theme={isDark ? "dark" : "default"} providers={[]} />
         </div>
       </div>
     );
@@ -188,13 +202,10 @@ export default function Home() {
       <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-300/30'} blur-[150px] rounded-full`}></div>
       <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-300/30'} blur-[150px] rounded-full`}></div>
 
-      {/* NAVBAR */}
       <nav className={`relative z-40 w-full backdrop-blur-md ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/50 border-slate-200'} border-b px-6 py-4 flex justify-between items-center transition-colors duration-500`}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl">
-              <Terminal className="w-5 h-5 text-white" />
-            </div>
+            <div className="p-2 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl"><Terminal className="w-5 h-5 text-white" /></div>
             <span className={`text-xl font-bold hidden sm:block ${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-cyan-300' : 'text-slate-900'}`}>PromptArchitect</span>
           </div>
           <div className={`hidden md:flex ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-200 border-slate-300'} border rounded-lg p-1`}>
@@ -203,12 +214,8 @@ export default function Home() {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
-          <button onClick={() => { playClickSound(); setSoundEnabled(!soundEnabled); }} className={`p-2 rounded-lg transition-all hover:scale-110 active:scale-95 ${isDark ? 'hover:bg-white/10 text-zinc-400' : 'hover:bg-slate-200 text-slate-500'}`}>
-            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-          </button>
-          <button onClick={() => { playClickSound(); setIsDark(!isDark); }} className={`p-2 rounded-lg transition-all hover:scale-110 active:scale-95 ${isDark ? 'hover:bg-white/10 text-zinc-400' : 'hover:bg-slate-200 text-slate-500'}`}>
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          <button onClick={() => { playClickSound(); setSoundEnabled(!soundEnabled); }} className={`p-2 rounded-lg transition-all hover:scale-110 active:scale-95 ${isDark ? 'hover:bg-white/10 text-zinc-400' : 'hover:bg-slate-200 text-slate-500'}`}>{soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}</button>
+          <button onClick={() => { playClickSound(); setIsDark(!isDark); }} className={`p-2 rounded-lg transition-all hover:scale-110 active:scale-95 ${isDark ? 'hover:bg-white/10 text-zinc-400' : 'hover:bg-slate-200 text-slate-500'}`}>{isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}</button>
           <button onClick={() => { playClickSound(); setIsHistoryOpen(true); }} className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-all hover:scale-105 active:scale-95 ${isDark ? 'bg-white/5 hover:bg-white/10 border-white/10' : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'}`}><History className="w-4 h-4" /><span className="hidden sm:block">History</span></button>
           <button onClick={() => { playClickSound(); supabase.auth.signOut(); }} className={`p-2 rounded-lg transition-all hover:scale-110 active:scale-95 hover:bg-red-500/20 ${isDark ? 'text-zinc-400' : 'text-slate-500'} hover:text-red-500`}><LogOut className="w-5 h-5" /></button>
         </div>
@@ -246,40 +253,20 @@ export default function Home() {
                     <button onClick={() => { playClickSound(); setMode('image'); }} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 active:scale-95 ${mode === 'image' ? (isDark ? 'bg-pink-500/20 text-pink-300' : 'bg-pink-100 text-pink-700 shadow-sm') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}><ImageIcon className="w-4 h-4" /> Image</button>
                     <button onClick={() => { playClickSound(); setMode('video'); }} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 active:scale-95 ${mode === 'video' ? (isDark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-700 shadow-sm') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}><Video className="w-4 h-4" /> Video</button>
                   </div>
-
                   <h1 className={`text-3xl font-bold mb-2 ${themeTextMain}`}>Craft the Perfect Prompt.</h1>
                   <p className={`${themeTextMuted} mb-6 text-sm`}>Dump your messy thoughts below. We will optimize it for {mode === 'text' ? 'ChatGPT/Claude' : mode === 'image' ? 'Midjourney/DALL-E' : 'Sora/Runway'}.</p>
+                  <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder={`What do you want to ${mode === 'text' ? 'write or build' : mode === 'image' ? 'see' : 'direct'}?`} className={`w-full h-32 border rounded-2xl p-5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none mb-4 transition-colors ${themeInputBg}`} />
                   
-                  <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder={`What do you want to ${mode === 'text' ? 'write or build' : mode === 'image' ? 'see' : 'direct'}?`}
-                    className={`w-full h-32 border rounded-2xl p-5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none mb-4 transition-colors ${themeInputBg}`}
-                  />
-
                   {mode === 'image' && (
                     <div className="grid grid-cols-2 gap-4 mb-4 animate-in fade-in slide-in-from-top-4">
-                      <div>
-                        <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Art Style / Medium</label>
-                        <input type="text" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="e.g., 3D Render" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-pink-500/50 ${themeInputBg}`} />
-                      </div>
-                      <div>
-                        <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Lighting / Mood</label>
-                        <input type="text" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="e.g., Cinematic lighting" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-pink-500/50 ${themeInputBg}`} />
-                      </div>
+                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Art Style / Medium</label><input type="text" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="e.g., 3D Render" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-pink-500/50 ${themeInputBg}`} /></div>
+                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Lighting / Mood</label><input type="text" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="e.g., Cinematic lighting" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-pink-500/50 ${themeInputBg}`} /></div>
                     </div>
                   )}
-
                   {mode === 'video' && (
                     <div className="grid grid-cols-2 gap-4 mb-4 animate-in fade-in slide-in-from-top-4">
-                      <div>
-                        <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Camera Movement</label>
-                        <input type="text" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="e.g., Drone flyover" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-purple-500/50 ${themeInputBg}`} />
-                      </div>
-                      <div>
-                        <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Pacing / Vibe</label>
-                        <input type="text" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="e.g., Fast-paced" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-purple-500/50 ${themeInputBg}`} />
-                      </div>
+                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Camera Movement</label><input type="text" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="e.g., Drone flyover" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-purple-500/50 ${themeInputBg}`} /></div>
+                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Pacing / Vibe</label><input type="text" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="e.g., Fast-paced" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-purple-500/50 ${themeInputBg}`} /></div>
                     </div>
                   )}
 
@@ -290,29 +277,31 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 2. OUTPUT BOX */}
-                {output && (
-                  <div className={`animate-in fade-in slide-in-from-bottom-8 duration-700 backdrop-blur-md ${themeCardBg} border-l-4 rounded-3xl p-6 sm:p-8 ${mode === 'text' ? 'border-l-cyan-500' : mode === 'image' ? 'border-l-pink-500' : 'border-l-purple-500'}`}>
-                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                      <label className={`text-sm font-bold flex items-center gap-2 uppercase tracking-wider ${mode === 'text' ? 'text-cyan-500' : mode === 'image' ? 'text-pink-500' : 'text-purple-500'}`}>
-                        <Sparkles className="w-4 h-4" /> Optimized Output
-                      </label>
-                      <div className="flex items-center gap-3">
-                        {currentPromptId && (
-                          <button onClick={togglePublish} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all hover:scale-105 active:scale-95 ${isCurrentPublic ? 'bg-green-500/10 border-green-500/30 text-green-500' : (isDark ? 'bg-white/5 border-white/10 text-zinc-400 hover:text-white' : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900')}`}>
-                            <Globe className="w-3 h-3" /> {isCurrentPublic ? 'Live in Community' : 'Publish'}
-                          </button>
-                        )}
-                        <button onClick={() => copyToClipboard(output)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all hover:scale-105 active:scale-95 ${isDark ? 'bg-white/5 hover:bg-white/10 text-white border-white/10' : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-200'}`}>
-                          {copied ? "Copied!" : "Copy Prompt"}
+                {/* 2. OUTPUT BOX (NOW PERMANENT) */}
+                <div className={`backdrop-blur-md ${themeCardBg} border-l-4 rounded-3xl p-6 sm:p-8 transition-colors duration-500 ${mode === 'text' ? 'border-l-cyan-500' : mode === 'image' ? 'border-l-pink-500' : 'border-l-purple-500'}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <label className={`text-sm font-bold flex items-center gap-2 uppercase tracking-wider ${mode === 'text' ? 'text-cyan-500' : mode === 'image' ? 'text-pink-500' : 'text-purple-500'}`}>
+                      <Sparkles className="w-4 h-4" /> Optimized Output
+                    </label>
+                    <div className="flex items-center gap-3">
+                      {currentPromptId && output && !isTyping && (
+                        <button onClick={togglePublish} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all hover:scale-105 active:scale-95 ${isCurrentPublic ? 'bg-green-500/10 border-green-500/30 text-green-500' : (isDark ? 'bg-white/5 border-white/10 text-zinc-400 hover:text-white' : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900')}`}>
+                          <Globe className="w-3 h-3" /> {isCurrentPublic ? 'Live in Community' : 'Publish'}
                         </button>
-                      </div>
-                    </div>
-                    <div className={`rounded-2xl p-6 leading-relaxed whitespace-pre-wrap font-mono text-sm border overflow-x-auto ${isDark ? 'bg-black/40 text-zinc-200 border-white/5' : 'bg-slate-50 text-slate-800 border-slate-200'}`}>
-                      {output}
+                      )}
+                      <button onClick={() => copyToClipboard(output)} disabled={!output || isTyping} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 ${isDark ? 'bg-white/5 hover:bg-white/10 text-white border-white/10' : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-200'}`}>
+                        {copied ? "Copied!" : "Copy Prompt"}
+                      </button>
                     </div>
                   </div>
-                )}
+                  
+                  {/* TEXT AREA WITH TYPING EFFECT */}
+                  <div className={`rounded-2xl p-6 leading-relaxed whitespace-pre-wrap font-mono text-sm border overflow-x-auto min-h-[150px] transition-colors ${isDark ? 'bg-black/40 text-zinc-200 border-white/5' : 'bg-slate-50 text-slate-800 border-slate-200'}`}>
+                    {displayedOutput || (!isTyping && <span className={`${isDark ? 'text-zinc-600' : 'text-slate-400'} italic`}>Awaiting your instructions...</span>)}
+                    {isTyping && <span className={`animate-pulse ${mode === 'text' ? 'text-cyan-400' : mode === 'image' ? 'text-pink-400' : 'text-purple-400'}`}>|</span>}
+                  </div>
+                </div>
+
               </div>
 
               {/* Right Column: Tips & Inspiration */}
@@ -331,20 +320,15 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* NEW: VISUAL FILLER / INSPIRATION SHOWCASE */}
                 <div className={`relative backdrop-blur-md overflow-hidden rounded-3xl border ${themeCardBg} flex-1 min-h-[300px] group cursor-pointer`}>
                   <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" alt="Abstract AI" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
                   <div className="absolute bottom-0 left-0 p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Featured</span>
-                    </div>
+                    <div className="flex items-center gap-2 mb-2"><Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /><span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Featured</span></div>
                     <h3 className="text-lg font-bold text-white mb-2">Liquid Neon Aesthetics</h3>
                     <p className="text-xs text-zinc-300 line-clamp-2">"A high-contrast 3D render of liquid chrome waves glowing with neon pink and cyan..."</p>
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -354,7 +338,6 @@ export default function Home() {
                 <h2 className={`text-3xl md:text-4xl font-bold text-transparent bg-clip-text ${isDark ? 'bg-gradient-to-r from-white to-zinc-400' : 'bg-gradient-to-r from-slate-900 to-slate-500'} mb-4`}>Why Prompt Engineering Matters.</h2>
                 <p className={`${themeTextMuted} max-w-2xl mx-auto text-sm md:text-base leading-relaxed`}>Generative AI models are powerful, but they operate exactly like highly literal interns. If you give them vague instructions, you get generic, hallucinated, or unhelpful results.</p>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
                 <div className={`bg-gradient-to-b ${isDark ? 'from-white/5 to-transparent border-white/10 hover:border-cyan-500/30' : 'from-white to-slate-50 border-slate-200 hover:border-cyan-500 shadow-sm'} border rounded-2xl p-6 transition-colors`}>
                   <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center mb-4"><Terminal className="w-5 h-5 text-cyan-500" /></div>
