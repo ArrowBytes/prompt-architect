@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Copy, History, MessageSquare, Zap, Lightbulb, X, Terminal, LogOut, Globe, Users, Lock, Type, Image as ImageIcon, Video, Volume2, VolumeX, Moon, Sun, Star, Activity, PieChart } from "lucide-react";
+import { Sparkles, Copy, History, MessageSquare, Zap, Lightbulb, X, LogOut, Globe, Users, Lock, Type, Image as ImageIcon, Video, Volume2, VolumeX, Moon, Sun, Star, Activity, PieChart, Command } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -48,7 +48,6 @@ export default function Home() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [currentTip, setCurrentTip] = useState(0);
 
-  // --- NEW: STATS DASHBOARD STATE ---
   const [stats, setStats] = useState({ total: 0, topMode: 'Text', publicShared: 0 });
 
   const [isDark, setIsDark] = useState(true);
@@ -94,7 +93,7 @@ export default function Home() {
     if (session) { 
       fetchHistory(); 
       fetchCommunityPrompts(); 
-      fetchUserStats(); // Fetch stats on load
+      fetchUserStats();
     }
   }, [session]);
 
@@ -121,7 +120,6 @@ export default function Home() {
     return () => clearInterval(typingInterval);
   }, [output]);
 
-  // --- NEW: STATS MATHER & FETCHER ---
   const fetchUserStats = async () => {
     if (!session) return;
     const { data } = await supabase.from('prompts').select('prompt_type, is_public').eq('user_id', session.user.id);
@@ -130,7 +128,6 @@ export default function Home() {
       const total = data.length;
       const publicShared = data.filter((p) => p.is_public).length;
       
-      // Calculate Most Used Mode
       const modeCounts = data.reduce((acc, curr) => {
         const type = curr.prompt_type || 'text';
         acc[type] = (acc[type] || 0) + 1;
@@ -180,7 +177,7 @@ export default function Home() {
         if (newRow) { 
           setCurrentPromptId(newRow.id); 
           fetchHistory(); 
-          fetchUserStats(); // Update stats immediately
+          fetchUserStats(); 
         }
       }
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
@@ -194,7 +191,7 @@ export default function Home() {
     await supabase.from('prompts').update({ is_public: newStatus }).eq('id', currentPromptId);
     fetchHistory(); 
     fetchCommunityPrompts();
-    fetchUserStats(); // Update shared stat immediately
+    fetchUserStats(); 
   };
 
   const copyToClipboard = (text: string) => {
@@ -215,10 +212,11 @@ export default function Home() {
       <div className={`min-h-screen ${themeBg} transition-colors duration-500 flex items-center justify-center p-6 relative overflow-hidden`}>
         <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-400/30'} blur-[150px] rounded-full`}></div>
         <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-400/30'} blur-[150px] rounded-full`}></div>
-        <div className={`w-full max-w-md backdrop-blur-xl ${isDark ? 'bg-black/40 border-white/10' : 'bg-white/70 border-white/50 shadow-2xl'} border rounded-3xl p-8 relative z-10`}>
-          <div className="flex flex-col items-center gap-3 mb-8">
-            <div className="p-3 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-2xl"><Terminal className="w-8 h-8 text-white" /></div>
-            <h1 className={`text-2xl font-bold ${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-cyan-300' : 'text-slate-900'}`}>PromptArchitect</h1>
+        <div className={`w-full max-w-md backdrop-blur-xl ${isDark ? 'bg-black/40 border-white/10' : 'bg-white/70 border-white/50 shadow-2xl'} border rounded-3xl p-10 relative z-10`}>
+          <div className="flex flex-col items-center gap-4 mb-10">
+            {/* MINIMALIST LOGO */}
+            <Command className={`w-10 h-10 ${isDark ? 'text-white' : 'text-slate-900'}`} strokeWidth={1.5} />
+            <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ThePromptArchitect</h1>
           </div>
           <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa, variables: { default: { colors: { brand: '#4f46e5', brandAccent: '#4338ca', inputText: isDark ? 'white' : 'black', inputBackground: isDark ? '#18181b' : 'white', inputBorder: isDark ? '#27272a' : '#cbd5e1', inputBorderFocus: '#22d3ee' } } } }} theme={isDark ? "dark" : "default"} providers={[]} />
         </div>
@@ -227,15 +225,16 @@ export default function Home() {
   }
 
   return (
-    <div className={`min-h-screen ${themeBg} ${themeTextMain} font-sans overflow-hidden relative transition-colors duration-500`}>
-      <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-300/30'} blur-[150px] rounded-full`}></div>
-      <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-300/30'} blur-[150px] rounded-full`}></div>
+    <div className={`min-h-screen flex flex-col ${themeBg} ${themeTextMain} font-sans overflow-hidden relative transition-colors duration-500`}>
+      <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-300/30'} blur-[150px] rounded-full pointer-events-none`}></div>
+      <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-300/30'} blur-[150px] rounded-full pointer-events-none`}></div>
 
       <nav className={`relative z-40 w-full backdrop-blur-md ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/50 border-slate-200'} border-b px-6 py-4 flex justify-between items-center transition-colors duration-500`}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl"><Terminal className="w-5 h-5 text-white" /></div>
-            <span className={`text-xl font-bold hidden sm:block ${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-cyan-300' : 'text-slate-900'}`}>PromptArchitect</span>
+            {/* MINIMALIST NAV LOGO */}
+            <Command className={`w-6 h-6 ${isDark ? 'text-white' : 'text-slate-900'}`} strokeWidth={2} />
+            <span className={`text-lg font-bold tracking-tight hidden sm:block ${isDark ? 'text-white' : 'text-slate-900'}`}>ThePromptArchitect</span>
           </div>
           <div className={`hidden md:flex ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-200 border-slate-300'} border rounded-lg p-1`}>
             <button onClick={() => { playClickSound(); setView('build'); }} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all hover:scale-105 active:scale-95 ${view === 'build' ? (isDark ? 'bg-white/10 text-white' : 'bg-white text-slate-900 shadow') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}>Build</button>
@@ -268,7 +267,7 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-6 py-12 w-full">
         {view === 'build' ? (
           <div className="flex flex-col animate-in fade-in duration-500">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -349,7 +348,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* --- NEW: PERSONAL STATS DASHBOARD --- */}
                 <div className={`backdrop-blur-md bg-gradient-to-br ${isDark ? 'from-white/5 to-black border-white/10' : 'from-white to-slate-50 border-slate-200 shadow-lg'} border rounded-3xl p-6 flex-1 flex flex-col min-h-[300px]`}>
                   <div className="flex items-center gap-3 mb-6">
                     <div className={`p-2 rounded-lg ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
@@ -359,8 +357,6 @@ export default function Home() {
                   </div>
 
                   <div className="flex flex-col gap-4 flex-1 justify-center">
-                    
-                    {/* Stat 1: Total */}
                     <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                       <div className="flex items-center gap-3">
                         <Terminal className={`w-4 h-4 ${themeTextMuted}`} />
@@ -369,7 +365,6 @@ export default function Home() {
                       <span className={`text-xl font-bold ${themeTextMain}`}>{stats.total}</span>
                     </div>
 
-                    {/* Stat 2: Top Format */}
                     <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                       <div className="flex items-center gap-3">
                         <PieChart className={`w-4 h-4 ${themeTextMuted}`} />
@@ -378,7 +373,6 @@ export default function Home() {
                       <span className={`text-sm font-bold uppercase tracking-wider ${stats.topMode === 'Text' ? 'text-cyan-500' : stats.topMode === 'Image' ? 'text-pink-500' : 'text-purple-500'}`}>{stats.topMode}</span>
                     </div>
 
-                    {/* Stat 3: Community reach */}
                     <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                       <div className="flex items-center gap-3">
                         <Globe className={`w-4 h-4 ${themeTextMuted}`} />
@@ -386,7 +380,6 @@ export default function Home() {
                       </div>
                       <span className={`text-xl font-bold ${themeTextMain}`}>{stats.publicShared}</span>
                     </div>
-
                   </div>
                 </div>
 
@@ -439,6 +432,12 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {/* --- NEW FOOTER --- */}
+      <footer className={`w-full py-8 mt-auto text-center text-sm ${themeTextMuted} border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
+        Built by Pramath
+      </footer>
+
       {isHistoryOpen && <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => { playClickSound(); setIsHistoryOpen(false); }}></div>}
     </div>
   );
