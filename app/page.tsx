@@ -122,12 +122,7 @@ export default function Home() {
             <p className="text-zinc-400 text-sm text-center">Sign in to start building and saving your perfect AI prompts.</p>
           </div>
           
-          <Auth
-            supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
-            theme="dark"
-            providers={['google', 'github']}
-          />
+          
         </div>
       </div>
     );
