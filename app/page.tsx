@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Copy, History, MessageSquare, Zap, Lightbulb, X, Terminal, LogOut, Globe, Users, Lock, Type, Image as ImageIcon, Video, Volume2, VolumeX, Moon, Sun, Star } from "lucide-react";
+import { Sparkles, Copy, History, MessageSquare, Zap, Lightbulb, X, Terminal, LogOut, Globe, Users, Lock, Type, Image as ImageIcon, Video, Volume2, VolumeX, Moon, Sun, Star, Activity, PieChart } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -29,7 +29,6 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   
-  // --- NEW: TYPING EFFECT STATES ---
   const [displayedOutput, setDisplayedOutput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
@@ -49,10 +48,12 @@ export default function Home() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [currentTip, setCurrentTip] = useState(0);
 
+  // --- NEW: STATS DASHBOARD STATE ---
+  const [stats, setStats] = useState({ total: 0, topMode: 'Text', publicShared: 0 });
+
   const [isDark, setIsDark] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // --- AUDIO SYNTHESIZER ---
   const playClickSound = () => {
     if (!soundEnabled) return;
     try {
@@ -90,24 +91,24 @@ export default function Home() {
   }, [mode]);
 
   useEffect(() => {
-    if (session) { fetchHistory(); fetchCommunityPrompts(); }
+    if (session) { 
+      fetchHistory(); 
+      fetchCommunityPrompts(); 
+      fetchUserStats(); // Fetch stats on load
+    }
   }, [session]);
 
   useEffect(() => { setQ1(""); setQ2(""); setCurrentTip(0); }, [mode]);
 
-  // --- NEW: TYPING EFFECT HOOK ---
   useEffect(() => {
     if (!output) {
       setDisplayedOutput("");
       setIsTyping(false);
       return;
     }
-
     setIsTyping(true);
     setDisplayedOutput("");
     let i = 0;
-    
-    // Speed: Lower number = faster typing (10ms is fast and snappy)
     const typingInterval = setInterval(() => {
       if (i < output.length) {
         setDisplayedOutput((prev) => prev + output.charAt(i));
@@ -117,9 +118,31 @@ export default function Home() {
         setIsTyping(false);
       }
     }, 10);
-
     return () => clearInterval(typingInterval);
   }, [output]);
+
+  // --- NEW: STATS MATHER & FETCHER ---
+  const fetchUserStats = async () => {
+    if (!session) return;
+    const { data } = await supabase.from('prompts').select('prompt_type, is_public').eq('user_id', session.user.id);
+    
+    if (data && data.length > 0) {
+      const total = data.length;
+      const publicShared = data.filter((p) => p.is_public).length;
+      
+      // Calculate Most Used Mode
+      const modeCounts = data.reduce((acc, curr) => {
+        const type = curr.prompt_type || 'text';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const topModeRaw = Object.keys(modeCounts).sort((a, b) => modeCounts[b] - modeCounts[a])[0];
+      const topMode = topModeRaw.charAt(0).toUpperCase() + topModeRaw.slice(1);
+      
+      setStats({ total, topMode, publicShared });
+    }
+  };
 
   const fetchHistory = async () => {
     if (!session) return;
@@ -138,7 +161,7 @@ export default function Home() {
     
     setIsLoading(true);
     setIsCurrentPublic(false);
-    setOutput(""); // Reset output to trigger typing effect on new generation
+    setOutput(""); 
     
     let extraContext = "";
     if (mode === 'image') extraContext = `Style/Medium: ${q1}. Lighting/Mood: ${q2}.`;
@@ -154,7 +177,11 @@ export default function Home() {
       if (response.ok) {
         setOutput(data.result);
         const { data: newRow } = await supabase.from('prompts').insert([{ original_idea: input, refined_prompt: data.result, user_id: session.user.id, is_public: false, prompt_type: mode }]).select().single();
-        if (newRow) { setCurrentPromptId(newRow.id); fetchHistory(); }
+        if (newRow) { 
+          setCurrentPromptId(newRow.id); 
+          fetchHistory(); 
+          fetchUserStats(); // Update stats immediately
+        }
       }
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   };
@@ -165,7 +192,9 @@ export default function Home() {
     const newStatus = !isCurrentPublic;
     setIsCurrentPublic(newStatus);
     await supabase.from('prompts').update({ is_public: newStatus }).eq('id', currentPromptId);
-    fetchHistory(); fetchCommunityPrompts();
+    fetchHistory(); 
+    fetchCommunityPrompts();
+    fetchUserStats(); // Update shared stat immediately
   };
 
   const copyToClipboard = (text: string) => {
@@ -277,7 +306,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 2. OUTPUT BOX (NOW PERMANENT) */}
+                {/* 2. OUTPUT BOX */}
                 <div className={`backdrop-blur-md ${themeCardBg} border-l-4 rounded-3xl p-6 sm:p-8 transition-colors duration-500 ${mode === 'text' ? 'border-l-cyan-500' : mode === 'image' ? 'border-l-pink-500' : 'border-l-purple-500'}`}>
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <label className={`text-sm font-bold flex items-center gap-2 uppercase tracking-wider ${mode === 'text' ? 'text-cyan-500' : mode === 'image' ? 'text-pink-500' : 'text-purple-500'}`}>
@@ -295,7 +324,6 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  {/* TEXT AREA WITH TYPING EFFECT */}
                   <div className={`rounded-2xl p-6 leading-relaxed whitespace-pre-wrap font-mono text-sm border overflow-x-auto min-h-[150px] transition-colors ${isDark ? 'bg-black/40 text-zinc-200 border-white/5' : 'bg-slate-50 text-slate-800 border-slate-200'}`}>
                     {displayedOutput || (!isTyping && <span className={`${isDark ? 'text-zinc-600' : 'text-slate-400'} italic`}>Awaiting your instructions...</span>)}
                     {isTyping && <span className={`animate-pulse ${mode === 'text' ? 'text-cyan-400' : mode === 'image' ? 'text-pink-400' : 'text-purple-400'}`}>|</span>}
@@ -304,8 +332,9 @@ export default function Home() {
 
               </div>
 
-              {/* Right Column: Tips & Inspiration */}
+              {/* Right Column: Tips & DASHBOARD */}
               <div className="col-span-1 hidden lg:flex flex-col gap-6">
+                
                 <div className={`backdrop-blur-md bg-gradient-to-br ${isDark ? 'from-white/5 to-black border-white/10' : 'from-white to-slate-50 border-slate-200 shadow-lg'} border rounded-3xl p-6 h-48`}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`p-2 rounded-lg ${mode === 'text' ? 'bg-cyan-500/20' : mode === 'image' ? 'bg-pink-500/20' : 'bg-purple-500/20'}`}><Lightbulb className={`w-5 h-5 ${mode === 'text' ? 'text-cyan-500' : mode === 'image' ? 'text-pink-500' : 'text-purple-500'}`} /></div>
@@ -320,15 +349,47 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className={`relative backdrop-blur-md overflow-hidden rounded-3xl border ${themeCardBg} flex-1 min-h-[300px] group cursor-pointer`}>
-                  <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" alt="Abstract AI" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 p-6">
-                    <div className="flex items-center gap-2 mb-2"><Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /><span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Featured</span></div>
-                    <h3 className="text-lg font-bold text-white mb-2">Liquid Neon Aesthetics</h3>
-                    <p className="text-xs text-zinc-300 line-clamp-2">"A high-contrast 3D render of liquid chrome waves glowing with neon pink and cyan..."</p>
+                {/* --- NEW: PERSONAL STATS DASHBOARD --- */}
+                <div className={`backdrop-blur-md bg-gradient-to-br ${isDark ? 'from-white/5 to-black border-white/10' : 'from-white to-slate-50 border-slate-200 shadow-lg'} border rounded-3xl p-6 flex-1 flex flex-col min-h-[300px]`}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className={`p-2 rounded-lg ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
+                      <Activity className={`w-5 h-5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                    </div>
+                    <h3 className={`font-semibold ${themeTextMain}`}>Your Architect Stats</h3>
+                  </div>
+
+                  <div className="flex flex-col gap-4 flex-1 justify-center">
+                    
+                    {/* Stat 1: Total */}
+                    <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                      <div className="flex items-center gap-3">
+                        <Terminal className={`w-4 h-4 ${themeTextMuted}`} />
+                        <span className={`text-sm font-medium ${themeTextMuted}`}>Total Generated</span>
+                      </div>
+                      <span className={`text-xl font-bold ${themeTextMain}`}>{stats.total}</span>
+                    </div>
+
+                    {/* Stat 2: Top Format */}
+                    <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                      <div className="flex items-center gap-3">
+                        <PieChart className={`w-4 h-4 ${themeTextMuted}`} />
+                        <span className={`text-sm font-medium ${themeTextMuted}`}>Top Format</span>
+                      </div>
+                      <span className={`text-sm font-bold uppercase tracking-wider ${stats.topMode === 'Text' ? 'text-cyan-500' : stats.topMode === 'Image' ? 'text-pink-500' : 'text-purple-500'}`}>{stats.topMode}</span>
+                    </div>
+
+                    {/* Stat 3: Community reach */}
+                    <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                      <div className="flex items-center gap-3">
+                        <Globe className={`w-4 h-4 ${themeTextMuted}`} />
+                        <span className={`text-sm font-medium ${themeTextMuted}`}>Public Shared</span>
+                      </div>
+                      <span className={`text-xl font-bold ${themeTextMain}`}>{stats.publicShared}</span>
+                    </div>
+
                   </div>
                 </div>
+
               </div>
             </div>
 
