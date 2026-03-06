@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚡️ Prompt Architect
 
-## Getting Started
+**Live Demo:**https://prompt-architect-eta.vercel.app/
 
-First, run the development server:
+Prompt Architect is a sleek, AI-powered web application designed to transform raw, unstructured thoughts into highly optimized, ready-to-use AI prompts. Built by Pramath Ram, this tool leverages Google's prompt engineering best practices—specifically the Persona, Context, Task, Constraints, and Format framework—to ensure maximum output quality from Large Language Models. 
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🛠 Tech Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+* **Frontend Framework:** Next.js (App Router) & React
+* **Styling & UI:** Tailwind CSS with Glassmorphic design principles
+* **Icons:** Lucide React
+* **Backend & Database:** Supabase (PostgreSQL)
+* **Authentication:** Supabase Auth (Email/Password & Session Management)
+* **AI Engine:** OpenAI API (`gpt-4o-mini` model)
+* **Deployment:** Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ✨ Core Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* **AI Prompt Engineering Engine:** Automatically restructures vague ideas into highly detailed, actionable prompts.
+* **Secure User Accounts:** Full authentication flow protecting user data.
+* **Personalized Archive:** A slide-out history drawer that retrieves and displays prompts specific to the logged-in user.
+* **Dynamic Learning:** An integrated tip engine that cycles through prompt engineering best practices in real-time.
 
-## Learn More
+## 🚀 Getting Started Locally
 
-To learn more about Next.js, take a look at the following resources:
+1. **Clone the repository:** `git clone https://github.com/your-username/prompt-architect.git`
+2. **Install dependencies:** `npm install`
+3. **Environment Variables:** Create a `.env.local` file with:
+   * `NEXT_PUBLIC_SUPABASE_URL`
+   * `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   * `OPENAI_API_KEY`
+4. **Database Setup:** Run the provided SQL script in Supabase to create the `prompts` table with a `user_id` foreign key.
+5. **Run the server:** `npm run dev`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+**Author:** Pramath Ram
