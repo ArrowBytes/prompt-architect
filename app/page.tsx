@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Copy, History, MessageSquare, Zap, Lightbulb, X, LogOut, Globe, Users, Lock, Type, Image as ImageIcon, Video, Volume2, VolumeX, Moon, Sun, Star, Activity, PieChart, Command } from "lucide-react";
+import { Sparkles, Copy, History, MessageSquare, Zap, Lightbulb, X, Terminal, LogOut, Globe, Users, Lock, Type, Image as ImageIcon, Video, Volume2, VolumeX, Moon, Sun, Star, Activity, PieChart, Command } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -53,6 +53,7 @@ export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
+  // --- UPGRADED "PLEASANT" AUDIO SYNTHESIZER ---
   const playClickSound = () => {
     if (!soundEnabled) return;
     try {
@@ -61,18 +62,20 @@ export default function Home() {
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
       
+      // A pure, soft sine wave
       oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.05);
+      // High pitch like tapping a thin glass or a subtle bell
+      oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); 
       
-      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); 
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+      // Much lower volume (0.02 instead of 0.05) with a slightly longer, smoother fade
+      gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime); 
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
       
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
       
       oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.1);
+      oscillator.stop(audioCtx.currentTime + 0.15);
     } catch (e) {
       console.log("Audio not supported");
     }
@@ -214,7 +217,6 @@ export default function Home() {
         <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-400/30'} blur-[150px] rounded-full`}></div>
         <div className={`w-full max-w-md backdrop-blur-xl ${isDark ? 'bg-black/40 border-white/10' : 'bg-white/70 border-white/50 shadow-2xl'} border rounded-3xl p-10 relative z-10`}>
           <div className="flex flex-col items-center gap-4 mb-10">
-            {/* MINIMALIST LOGO */}
             <Command className={`w-10 h-10 ${isDark ? 'text-white' : 'text-slate-900'}`} strokeWidth={1.5} />
             <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ThePromptArchitect</h1>
           </div>
@@ -232,7 +234,6 @@ export default function Home() {
       <nav className={`relative z-40 w-full backdrop-blur-md ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/50 border-slate-200'} border-b px-6 py-4 flex justify-between items-center transition-colors duration-500`}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            {/* MINIMALIST NAV LOGO */}
             <Command className={`w-6 h-6 ${isDark ? 'text-white' : 'text-slate-900'}`} strokeWidth={2} />
             <span className={`text-lg font-bold tracking-tight hidden sm:block ${isDark ? 'text-white' : 'text-slate-900'}`}>ThePromptArchitect</span>
           </div>
@@ -433,7 +434,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* --- NEW FOOTER --- */}
+      {/* --- FOOTER --- */}
       <footer className={`w-full py-8 mt-auto text-center text-sm ${themeTextMuted} border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
         Built by Pramath
       </footer>
