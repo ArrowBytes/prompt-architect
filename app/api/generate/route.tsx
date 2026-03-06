@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: Request) {
   try {
+    // We moved this inside the function so it only triggers at runtime!
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const { prompt } = await req.json();
 
     const completion = await openai.chat.completions.create({
@@ -51,7 +52,7 @@ Your Output:
           content: prompt
         }
       ],
-      temperature: 0.5, // Lowered slightly for more consistent, structured outputs
+      temperature: 0.5,
     });
 
     return NextResponse.json({ result: completion.choices[0].message.content });
