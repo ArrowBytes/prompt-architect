@@ -112,8 +112,6 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 🚨 THE FIX IS HERE 🚨
-  // The timer now strictly stops if there is no session!
   useEffect(() => {
     if (!session) return; 
     const interval = setInterval(() => setCurrentTip((prev) => (prev + 1) % TIPS[mode].length), 5000);
@@ -319,7 +317,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* History Drawer */}
       <div className={`fixed inset-y-0 right-0 z-50 w-full sm:w-96 backdrop-blur-xl ${isDark ? 'bg-black/90 border-white/10' : 'bg-white/95 border-slate-200'} border-l p-6 transform transition-transform duration-500 ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex justify-between items-center mb-8">
           <h2 className={`text-lg font-bold flex items-center gap-2 ${currentTheme.icon} transition-colors duration-500`}><History className="w-5 h-5" /> Archive</h2>
@@ -498,6 +495,13 @@ export default function Home() {
                       <h3 className={`font-medium mb-2 line-clamp-2 ${themeTextMain}`}>"{prompt.original_idea}"</h3>
                       <p className={`text-xs line-clamp-4 font-mono mb-4 p-3 rounded-xl border ${isDark ? 'text-zinc-500 bg-black/40 border-white/5' : 'text-slate-600 bg-slate-50 border-slate-200'}`}>{prompt.refined_prompt}</p>
                     </div>
+                    {/* NEW: COPY BUTTON FOR COMMUNITY CARDS */}
+                    <button 
+                      onClick={() => copyToClipboard(prompt.refined_prompt)}
+                      className={`w-full py-2 mt-auto border rounded-lg text-sm font-medium transition-all hover:scale-105 active:scale-95 flex justify-center items-center gap-2 ${isDark ? 'bg-white/5 hover:bg-white/10 border-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-900'}`}
+                    >
+                      <Copy className="w-4 h-4" /> Copy Prompt
+                    </button>
                   </div>
                 ))}
             </div>
