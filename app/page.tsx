@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Copy, History, MessageSquare, Zap, Lightbulb, X, Terminal, LogOut, Globe, Users, Lock, Type, Image as ImageIcon, Video, Volume2, VolumeX, Moon, Sun, Star, Activity, PieChart, Command } from "lucide-react";
+import { Sparkles, Copy, History, MessageSquare, Zap, Lightbulb, X, Terminal, LogOut, Globe, Users, Lock, Type, Image as ImageIcon, Video, Volume2, VolumeX, Moon, Sun, Star, Activity, PieChart, Command, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -53,7 +53,37 @@ export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // --- UPGRADED "PLEASANT" AUDIO SYNTHESIZER ---
+  // --- DYNAMIC GLOBAL THEME MAPPING ---
+  const currentTheme = {
+    text: {
+      blob1: isDark ? 'bg-indigo-600/30' : 'bg-indigo-400/40',
+      blob2: isDark ? 'bg-cyan-600/30' : 'bg-cyan-400/40',
+      gradient: 'from-indigo-400 to-cyan-400',
+      button: 'from-indigo-600 to-cyan-600',
+      border: 'border-cyan-500',
+      icon: 'text-cyan-500',
+      iconBg: 'bg-cyan-500/20'
+    },
+    image: {
+      blob1: isDark ? 'bg-pink-600/30' : 'bg-pink-400/40',
+      blob2: isDark ? 'bg-rose-600/30' : 'bg-rose-400/40',
+      gradient: 'from-pink-400 to-rose-400',
+      button: 'from-pink-600 to-rose-600',
+      border: 'border-pink-500',
+      icon: 'text-pink-500',
+      iconBg: 'bg-pink-500/20'
+    },
+    video: {
+      blob1: isDark ? 'bg-purple-600/30' : 'bg-purple-400/40',
+      blob2: isDark ? 'bg-fuchsia-600/30' : 'bg-fuchsia-400/40',
+      gradient: 'from-purple-400 to-fuchsia-400',
+      button: 'from-purple-600 to-fuchsia-600',
+      border: 'border-purple-500',
+      icon: 'text-purple-500',
+      iconBg: 'bg-purple-500/20'
+    }
+  }[mode];
+
   const playClickSound = () => {
     if (!soundEnabled) return;
     try {
@@ -62,12 +92,8 @@ export default function Home() {
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
       
-      // A pure, soft sine wave
       oscillator.type = 'sine';
-      // High pitch like tapping a thin glass or a subtle bell
       oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); 
-      
-      // Much lower volume (0.02 instead of 0.05) with a slightly longer, smoother fade
       gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime); 
       gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
       
@@ -141,6 +167,8 @@ export default function Home() {
       const topMode = topModeRaw.charAt(0).toUpperCase() + topModeRaw.slice(1);
       
       setStats({ total, topMode, publicShared });
+    } else {
+      setStats({ total: 0, topMode: 'Text', publicShared: 0 });
     }
   };
 
@@ -197,6 +225,23 @@ export default function Home() {
     fetchUserStats(); 
   };
 
+  // --- NEW: DELETE PROMPT ---
+  const handleDeletePrompt = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // Stop the click from loading the prompt
+    playClickSound();
+    await supabase.from('prompts').delete().eq('id', id);
+    
+    if (currentPromptId === id) {
+      setCurrentPromptId(null);
+      setOutput("");
+      setDisplayedOutput("");
+    }
+    
+    fetchHistory();
+    fetchCommunityPrompts();
+    fetchUserStats();
+  };
+
   const copyToClipboard = (text: string) => {
     playClickSound();
     navigator.clipboard.writeText(text);
@@ -212,10 +257,22 @@ export default function Home() {
 
   if (!session) {
     return (
-      <div className={`min-h-screen ${themeBg} transition-colors duration-500 flex items-center justify-center p-6 relative overflow-hidden`}>
-        <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-400/30'} blur-[150px] rounded-full`}></div>
-        <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-400/30'} blur-[150px] rounded-full`}></div>
-        <div className={`w-full max-w-md backdrop-blur-xl ${isDark ? 'bg-black/40 border-white/10' : 'bg-white/70 border-white/50 shadow-2xl'} border rounded-3xl p-10 relative z-10`}>
+      <div className={`min-h-screen ${themeBg} transition-colors duration-1000 flex items-center justify-center p-6 relative overflow-hidden`}>
+        {/* CUSTOM CSS FOR AMBIENT MOVEMENT */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes float-slow {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+          }
+          .animate-float-slow { animation: float-slow 15s ease-in-out infinite; }
+          .animate-float-delayed { animation: float-slow 18s ease-in-out infinite; animation-delay: -5s; }
+        `}} />
+        
+        <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${currentTheme.blob1} blur-[150px] rounded-full animate-float-slow transition-colors duration-1000`}></div>
+        <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${currentTheme.blob2} blur-[150px] rounded-full animate-float-delayed transition-colors duration-1000`}></div>
+        
+        <div className={`w-full max-w-md backdrop-blur-xl ${isDark ? 'bg-black/40 border-white/10' : 'bg-white/70 border-white/50 shadow-2xl'} border rounded-3xl p-10 relative z-10 transition-colors duration-500`}>
           <div className="flex flex-col items-center gap-4 mb-10">
             <Command className={`w-10 h-10 ${isDark ? 'text-white' : 'text-slate-900'}`} strokeWidth={1.5} />
             <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>ThePromptArchitect</h1>
@@ -227,17 +284,30 @@ export default function Home() {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col ${themeBg} ${themeTextMain} font-sans overflow-hidden relative transition-colors duration-500`}>
-      <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-indigo-600/20' : 'bg-indigo-300/30'} blur-[150px] rounded-full pointer-events-none`}></div>
-      <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${isDark ? 'bg-cyan-600/20' : 'bg-cyan-300/30'} blur-[150px] rounded-full pointer-events-none`}></div>
+    <div className={`min-h-screen flex flex-col ${themeBg} ${themeTextMain} font-sans overflow-hidden relative transition-colors duration-1000`}>
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes float-slow {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        .animate-float-slow { animation: float-slow 15s ease-in-out infinite; }
+        .animate-float-delayed { animation: float-slow 18s ease-in-out infinite; animation-delay: -5s; }
+      `}} />
+
+      {/* AMBIENT BACKGROUND BLOBS */}
+      <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${currentTheme.blob1} blur-[150px] rounded-full pointer-events-none animate-float-slow transition-colors duration-1000`}></div>
+      <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${currentTheme.blob2} blur-[150px] rounded-full pointer-events-none animate-float-delayed transition-colors duration-1000`}></div>
 
       <nav className={`relative z-40 w-full backdrop-blur-md ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/50 border-slate-200'} border-b px-6 py-4 flex justify-between items-center transition-colors duration-500`}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <Command className={`w-6 h-6 ${isDark ? 'text-white' : 'text-slate-900'}`} strokeWidth={2} />
-            <span className={`text-lg font-bold tracking-tight hidden sm:block ${isDark ? 'text-white' : 'text-slate-900'}`}>ThePromptArchitect</span>
+            <Command className={`w-6 h-6 ${isDark ? 'text-white' : 'text-slate-900'} transition-colors duration-500`} strokeWidth={2} />
+            <span className={`text-lg font-bold tracking-tight hidden sm:block text-transparent bg-clip-text bg-gradient-to-r ${currentTheme.gradient} transition-all duration-1000`}>
+              ThePromptArchitect
+            </span>
           </div>
-          <div className={`hidden md:flex ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-200 border-slate-300'} border rounded-lg p-1`}>
+          <div className={`hidden md:flex ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-200 border-slate-300'} border rounded-lg p-1 transition-colors duration-500`}>
             <button onClick={() => { playClickSound(); setView('build'); }} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all hover:scale-105 active:scale-95 ${view === 'build' ? (isDark ? 'bg-white/10 text-white' : 'bg-white text-slate-900 shadow') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}>Build</button>
             <button onClick={() => { playClickSound(); setView('community'); fetchCommunityPrompts(); }} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all hover:scale-105 active:scale-95 ${view === 'community' ? (isDark ? 'bg-white/10 text-white' : 'bg-white text-slate-900 shadow') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}><Users className="w-4 h-4" /> Community</button>
           </div>
@@ -253,15 +323,21 @@ export default function Home() {
       {/* History Drawer */}
       <div className={`fixed inset-y-0 right-0 z-50 w-full sm:w-96 backdrop-blur-xl ${isDark ? 'bg-black/90 border-white/10' : 'bg-white/95 border-slate-200'} border-l p-6 transform transition-transform duration-500 ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-lg font-bold flex items-center gap-2 text-indigo-500"><History className="w-5 h-5" /> Archive</h2>
+          <h2 className={`text-lg font-bold flex items-center gap-2 ${currentTheme.icon} transition-colors duration-500`}><History className="w-5 h-5" /> Archive</h2>
           <button onClick={() => { playClickSound(); setIsHistoryOpen(false); }} className={`p-2 rounded-full transition-all hover:scale-110 active:scale-95 ${isDark ? 'hover:bg-white/10 text-zinc-400' : 'hover:bg-slate-100 text-slate-500'}`}><X className="w-5 h-5" /></button>
         </div>
         <div className="flex flex-col gap-4 overflow-y-auto h-[calc(100vh-120px)] pb-10">
           {history.map((item) => (
-            <div key={item.id} className={`${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} border rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-indigo-500/50`}>
-              <div className="flex items-start gap-3 cursor-pointer" onClick={() => { playClickSound(); setInput(item.original_idea); setOutput(item.refined_prompt); setMode(item.prompt_type || 'text'); setView('build'); setIsHistoryOpen(false); }}>
-                {item.prompt_type === 'image' ? <ImageIcon className="w-4 h-4 text-pink-500 mt-1" /> : item.prompt_type === 'video' ? <Video className="w-4 h-4 text-purple-500 mt-1" /> : <MessageSquare className="w-4 h-4 text-cyan-500 mt-1" />}
-                <p className={`text-sm font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{item.original_idea}</p>
+            <div key={item.id} className={`${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} border rounded-xl p-4 flex flex-col gap-3 transition-colors hover:border-indigo-500/50 group`}>
+              <div className="flex items-start justify-between gap-3 cursor-pointer w-full" onClick={() => { playClickSound(); setInput(item.original_idea); setOutput(item.refined_prompt); setMode(item.prompt_type || 'text'); setView('build'); setIsHistoryOpen(false); }}>
+                <div className="flex items-start gap-3 overflow-hidden">
+                  {item.prompt_type === 'image' ? <ImageIcon className="w-4 h-4 text-pink-500 mt-1 shrink-0" /> : item.prompt_type === 'video' ? <Video className="w-4 h-4 text-purple-500 mt-1 shrink-0" /> : <MessageSquare className="w-4 h-4 text-cyan-500 mt-1 shrink-0" />}
+                  <p className={`text-sm font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{item.original_idea}</p>
+                </div>
+                {/* NEW: DELETE BUTTON */}
+                <button onClick={(e) => handleDeletePrompt(item.id, e)} className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 text-zinc-500 hover:text-red-500">
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))}
@@ -277,39 +353,41 @@ export default function Home() {
                 
                 {/* 1. INPUT BOX */}
                 <div className={`backdrop-blur-md ${themeCardBg} border rounded-3xl p-6 sm:p-8 transition-colors duration-500`}>
-                  <div className={`flex gap-2 p-1 border rounded-xl mb-6 w-fit ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
+                  <div className={`flex gap-2 p-1 border rounded-xl mb-6 w-fit transition-colors duration-500 ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
                     <button onClick={() => { playClickSound(); setMode('text'); }} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 active:scale-95 ${mode === 'text' ? (isDark ? 'bg-cyan-500/20 text-cyan-300' : 'bg-cyan-100 text-cyan-700 shadow-sm') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}><Type className="w-4 h-4" /> Text</button>
                     <button onClick={() => { playClickSound(); setMode('image'); }} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 active:scale-95 ${mode === 'image' ? (isDark ? 'bg-pink-500/20 text-pink-300' : 'bg-pink-100 text-pink-700 shadow-sm') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}><ImageIcon className="w-4 h-4" /> Image</button>
                     <button onClick={() => { playClickSound(); setMode('video'); }} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 active:scale-95 ${mode === 'video' ? (isDark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-700 shadow-sm') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}><Video className="w-4 h-4" /> Video</button>
                   </div>
                   <h1 className={`text-3xl font-bold mb-2 ${themeTextMain}`}>Craft the Perfect Prompt.</h1>
                   <p className={`${themeTextMuted} mb-6 text-sm`}>Dump your messy thoughts below. We will optimize it for {mode === 'text' ? 'ChatGPT/Claude' : mode === 'image' ? 'Midjourney/DALL-E' : 'Sora/Runway'}.</p>
-                  <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder={`What do you want to ${mode === 'text' ? 'write or build' : mode === 'image' ? 'see' : 'direct'}?`} className={`w-full h-32 border rounded-2xl p-5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none mb-4 transition-colors ${themeInputBg}`} />
+                  
+                  {/* Dynamic Focus Rings */}
+                  <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder={`What do you want to ${mode === 'text' ? 'write or build' : mode === 'image' ? 'see' : 'direct'}?`} className={`w-full h-32 border rounded-2xl p-5 focus:outline-none focus:ring-2 resize-none mb-4 transition-colors ${themeInputBg} ${mode === 'text' ? 'focus:ring-cyan-500/50' : mode === 'image' ? 'focus:ring-pink-500/50' : 'focus:ring-purple-500/50'}`} />
                   
                   {mode === 'image' && (
                     <div className="grid grid-cols-2 gap-4 mb-4 animate-in fade-in slide-in-from-top-4">
-                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Art Style / Medium</label><input type="text" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="e.g., 3D Render" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-pink-500/50 ${themeInputBg}`} /></div>
-                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Lighting / Mood</label><input type="text" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="e.g., Cinematic lighting" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-pink-500/50 ${themeInputBg}`} /></div>
+                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Art Style / Medium</label><input type="text" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="e.g., 3D Render" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-colors ${themeInputBg}`} /></div>
+                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Lighting / Mood</label><input type="text" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="e.g., Cinematic lighting" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-colors ${themeInputBg}`} /></div>
                     </div>
                   )}
                   {mode === 'video' && (
                     <div className="grid grid-cols-2 gap-4 mb-4 animate-in fade-in slide-in-from-top-4">
-                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Camera Movement</label><input type="text" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="e.g., Drone flyover" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-purple-500/50 ${themeInputBg}`} /></div>
-                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Pacing / Vibe</label><input type="text" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="e.g., Fast-paced" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:border-purple-500/50 ${themeInputBg}`} /></div>
+                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Camera Movement</label><input type="text" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="e.g., Drone flyover" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-colors ${themeInputBg}`} /></div>
+                      <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${themeTextMuted}`}>Pacing / Vibe</label><input type="text" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="e.g., Fast-paced" className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-colors ${themeInputBg}`} /></div>
                     </div>
                   )}
 
                   <div className="flex justify-end mt-4">
-                    <button onClick={handleGenerate} disabled={isLoading || !input} className={`flex items-center gap-2 px-8 py-3.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95 text-white ${mode === 'text' ? 'bg-gradient-to-r from-indigo-600 to-cyan-600' : mode === 'image' ? 'bg-gradient-to-r from-pink-600 to-rose-600' : 'bg-gradient-to-r from-purple-600 to-indigo-600'} shadow-lg`}>
+                    <button onClick={handleGenerate} disabled={isLoading || !input} className={`flex items-center gap-2 px-8 py-3.5 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95 text-white bg-gradient-to-r ${currentTheme.button} shadow-lg duration-500`}>
                       {isLoading ? "Synthesizing..." : <>Generate Magic <Zap className="w-4 h-4" /></>}
                     </button>
                   </div>
                 </div>
 
                 {/* 2. OUTPUT BOX */}
-                <div className={`backdrop-blur-md ${themeCardBg} border-l-4 rounded-3xl p-6 sm:p-8 transition-colors duration-500 ${mode === 'text' ? 'border-l-cyan-500' : mode === 'image' ? 'border-l-pink-500' : 'border-l-purple-500'}`}>
+                <div className={`backdrop-blur-md ${themeCardBg} border-l-4 rounded-3xl p-6 sm:p-8 transition-colors duration-500 ${currentTheme.border}`}>
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    <label className={`text-sm font-bold flex items-center gap-2 uppercase tracking-wider ${mode === 'text' ? 'text-cyan-500' : mode === 'image' ? 'text-pink-500' : 'text-purple-500'}`}>
+                    <label className={`text-sm font-bold flex items-center gap-2 uppercase tracking-wider transition-colors duration-500 ${currentTheme.icon}`}>
                       <Sparkles className="w-4 h-4" /> Optimized Output
                     </label>
                     <div className="flex items-center gap-3">
@@ -324,9 +402,9 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  <div className={`rounded-2xl p-6 leading-relaxed whitespace-pre-wrap font-mono text-sm border overflow-x-auto min-h-[150px] transition-colors ${isDark ? 'bg-black/40 text-zinc-200 border-white/5' : 'bg-slate-50 text-slate-800 border-slate-200'}`}>
+                  <div className={`rounded-2xl p-6 leading-relaxed whitespace-pre-wrap font-mono text-sm border overflow-x-auto min-h-[150px] transition-colors duration-500 ${isDark ? 'bg-black/40 text-zinc-200 border-white/5' : 'bg-slate-50 text-slate-800 border-slate-200'}`}>
                     {displayedOutput || (!isTyping && <span className={`${isDark ? 'text-zinc-600' : 'text-slate-400'} italic`}>Awaiting your instructions...</span>)}
-                    {isTyping && <span className={`animate-pulse ${mode === 'text' ? 'text-cyan-400' : mode === 'image' ? 'text-pink-400' : 'text-purple-400'}`}>|</span>}
+                    {isTyping && <span className={`animate-pulse transition-colors duration-500 ${currentTheme.icon}`}>|</span>}
                   </div>
                 </div>
 
@@ -335,9 +413,9 @@ export default function Home() {
               {/* Right Column: Tips & DASHBOARD */}
               <div className="col-span-1 hidden lg:flex flex-col gap-6">
                 
-                <div className={`backdrop-blur-md bg-gradient-to-br ${isDark ? 'from-white/5 to-black border-white/10' : 'from-white to-slate-50 border-slate-200 shadow-lg'} border rounded-3xl p-6 h-48`}>
+                <div className={`backdrop-blur-md bg-gradient-to-br ${isDark ? 'from-white/5 to-black border-white/10' : 'from-white to-slate-50 border-slate-200 shadow-lg'} border rounded-3xl p-6 h-48 transition-colors duration-500`}>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className={`p-2 rounded-lg ${mode === 'text' ? 'bg-cyan-500/20' : mode === 'image' ? 'bg-pink-500/20' : 'bg-purple-500/20'}`}><Lightbulb className={`w-5 h-5 ${mode === 'text' ? 'text-cyan-500' : mode === 'image' ? 'text-pink-500' : 'text-purple-500'}`} /></div>
+                    <div className={`p-2 rounded-lg transition-colors duration-500 ${currentTheme.iconBg}`}><Lightbulb className={`w-5 h-5 transition-colors duration-500 ${currentTheme.icon}`} /></div>
                     <h3 className={`font-semibold ${themeTextMain}`}>Pro Prompting Tips</h3>
                   </div>
                   <div className="relative h-full">
@@ -349,16 +427,16 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className={`backdrop-blur-md bg-gradient-to-br ${isDark ? 'from-white/5 to-black border-white/10' : 'from-white to-slate-50 border-slate-200 shadow-lg'} border rounded-3xl p-6 flex-1 flex flex-col min-h-[300px]`}>
+                <div className={`backdrop-blur-md bg-gradient-to-br ${isDark ? 'from-white/5 to-black border-white/10' : 'from-white to-slate-50 border-slate-200 shadow-lg'} border rounded-3xl p-6 flex-1 flex flex-col min-h-[300px] transition-colors duration-500`}>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className={`p-2 rounded-lg ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
-                      <Activity className={`w-5 h-5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                    <div className={`p-2 rounded-lg transition-colors duration-500 ${currentTheme.iconBg}`}>
+                      <Activity className={`w-5 h-5 transition-colors duration-500 ${currentTheme.icon}`} />
                     </div>
                     <h3 className={`font-semibold ${themeTextMain}`}>Your Architect Stats</h3>
                   </div>
 
                   <div className="flex flex-col gap-4 flex-1 justify-center">
-                    <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors duration-500 ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                       <div className="flex items-center gap-3">
                         <Terminal className={`w-4 h-4 ${themeTextMuted}`} />
                         <span className={`text-sm font-medium ${themeTextMuted}`}>Total Generated</span>
@@ -366,15 +444,15 @@ export default function Home() {
                       <span className={`text-xl font-bold ${themeTextMain}`}>{stats.total}</span>
                     </div>
 
-                    <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors duration-500 ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                       <div className="flex items-center gap-3">
                         <PieChart className={`w-4 h-4 ${themeTextMuted}`} />
                         <span className={`text-sm font-medium ${themeTextMuted}`}>Top Format</span>
                       </div>
-                      <span className={`text-sm font-bold uppercase tracking-wider ${stats.topMode === 'Text' ? 'text-cyan-500' : stats.topMode === 'Image' ? 'text-pink-500' : 'text-purple-500'}`}>{stats.topMode}</span>
+                      <span className={`text-sm font-bold uppercase tracking-wider transition-colors duration-500 ${stats.topMode === 'Text' ? 'text-cyan-500' : stats.topMode === 'Image' ? 'text-pink-500' : 'text-purple-500'}`}>{stats.topMode}</span>
                     </div>
 
-                    <div className={`flex items-center justify-between p-4 rounded-2xl border ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors duration-500 ${isDark ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                       <div className="flex items-center gap-3">
                         <Globe className={`w-4 h-4 ${themeTextMuted}`} />
                         <span className={`text-sm font-medium ${themeTextMuted}`}>Public Shared</span>
@@ -390,22 +468,22 @@ export default function Home() {
             {/* --- BOTTOM SECTION: EDUCATIONAL --- */}
             <div className="mt-24 mb-12 animate-in fade-in duration-700">
               <div className="text-center mb-16">
-                <h2 className={`text-3xl md:text-4xl font-bold text-transparent bg-clip-text ${isDark ? 'bg-gradient-to-r from-white to-zinc-400' : 'bg-gradient-to-r from-slate-900 to-slate-500'} mb-4`}>Why Prompt Engineering Matters.</h2>
+                <h2 className={`text-3xl md:text-4xl font-bold text-transparent bg-clip-text transition-colors duration-500 ${isDark ? 'bg-gradient-to-r from-white to-zinc-400' : 'bg-gradient-to-r from-slate-900 to-slate-500'} mb-4`}>Why Prompt Engineering Matters.</h2>
                 <p className={`${themeTextMuted} max-w-2xl mx-auto text-sm md:text-base leading-relaxed`}>Generative AI models are powerful, but they operate exactly like highly literal interns. If you give them vague instructions, you get generic, hallucinated, or unhelpful results.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
                 <div className={`bg-gradient-to-b ${isDark ? 'from-white/5 to-transparent border-white/10 hover:border-cyan-500/30' : 'from-white to-slate-50 border-slate-200 hover:border-cyan-500 shadow-sm'} border rounded-2xl p-6 transition-colors`}>
-                  <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center mb-4"><Terminal className="w-5 h-5 text-cyan-500" /></div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-colors duration-500 ${currentTheme.iconBg}`}><Terminal className={`w-5 h-5 transition-colors duration-500 ${currentTheme.icon}`} /></div>
                   <h3 className={`text-lg font-bold mb-2 ${themeTextMain}`}>Absolute Precision</h3>
                   <p className={`text-sm ${themeTextMuted} leading-relaxed`}>Stop hoping the AI guesses what you want. By explicitly defining the Persona and Format, you force the model to output exactly what you need on the very first try.</p>
                 </div>
                 <div className={`bg-gradient-to-b ${isDark ? 'from-white/5 to-transparent border-white/10 hover:border-indigo-500/30' : 'from-white to-slate-50 border-slate-200 hover:border-indigo-500 shadow-sm'} border rounded-2xl p-6 transition-colors`}>
-                  <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center mb-4"><Lock className="w-5 h-5 text-indigo-500" /></div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-colors duration-500 ${currentTheme.iconBg}`}><Lock className={`w-5 h-5 transition-colors duration-500 ${currentTheme.icon}`} /></div>
                   <h3 className={`text-lg font-bold mb-2 ${themeTextMain}`}>Constraint Enforcement</h3>
                   <p className={`text-sm ${themeTextMuted} leading-relaxed`}>The best way to control AI is by telling it what *not* to do. Setting hard constraints prevents AI from using corporate jargon or rambling off-topic.</p>
                 </div>
                 <div className={`bg-gradient-to-b ${isDark ? 'from-white/5 to-transparent border-white/10 hover:border-purple-500/30' : 'from-white to-slate-50 border-slate-200 hover:border-purple-500 shadow-sm'} border rounded-2xl p-6 transition-colors`}>
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mb-4"><Zap className="w-5 h-5 text-purple-500" /></div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-colors duration-500 ${currentTheme.iconBg}`}><Zap className={`w-5 h-5 transition-colors duration-500 ${currentTheme.icon}`} /></div>
                   <h3 className={`text-lg font-bold mb-2 ${themeTextMain}`}>Workflow Velocity</h3>
                   <p className={`text-sm ${themeTextMuted} leading-relaxed`}>Instead of spending 20 minutes arguing with ChatGPT, a perfectly architected prompt gets you production-ready code or copy instantly.</p>
                 </div>
@@ -434,9 +512,11 @@ export default function Home() {
         )}
       </main>
 
-      {/* --- FOOTER --- */}
-      <footer className={`w-full py-8 mt-auto text-center text-sm ${themeTextMuted} border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
-        Built by Pramath
+      {/* --- SUPER-SIZED SIGNATURE FOOTER --- */}
+      <footer className={`w-full py-16 mt-auto text-center border-t transition-colors duration-500 ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
+        <p className={`text-3xl md:text-5xl font-extrabold tracking-widest uppercase opacity-80 text-transparent bg-clip-text bg-gradient-to-r ${currentTheme.gradient} transition-all duration-1000`}>
+          Built by Pramath
+        </p>
       </footer>
 
       {isHistoryOpen && <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => { playClickSound(); setIsHistoryOpen(false); }}></div>}
