@@ -53,7 +53,6 @@ export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // --- DYNAMIC GLOBAL THEME MAPPING ---
   const currentTheme = {
     text: {
       blob1: isDark ? 'bg-indigo-600/30' : 'bg-indigo-400/40',
@@ -113,10 +112,13 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // 🚨 THE FIX IS HERE 🚨
+  // The timer now strictly stops if there is no session!
   useEffect(() => {
+    if (!session) return; 
     const interval = setInterval(() => setCurrentTip((prev) => (prev + 1) % TIPS[mode].length), 5000);
     return () => clearInterval(interval);
-  }, [mode]);
+  }, [mode, session]);
 
   useEffect(() => {
     if (session) { 
@@ -225,9 +227,8 @@ export default function Home() {
     fetchUserStats(); 
   };
 
-  // --- NEW: DELETE PROMPT ---
   const handleDeletePrompt = async (id: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop the click from loading the prompt
+    e.stopPropagation();
     playClickSound();
     await supabase.from('prompts').delete().eq('id', id);
     
@@ -258,7 +259,6 @@ export default function Home() {
   if (!session) {
     return (
       <div className={`min-h-screen ${themeBg} transition-colors duration-1000 flex items-center justify-center p-6 relative overflow-hidden`}>
-        {/* CUSTOM CSS FOR AMBIENT MOVEMENT */}
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes float-slow {
             0%, 100% { transform: translate(0px, 0px) scale(1); }
@@ -295,7 +295,6 @@ export default function Home() {
         .animate-float-delayed { animation: float-slow 18s ease-in-out infinite; animation-delay: -5s; }
       `}} />
 
-      {/* AMBIENT BACKGROUND BLOBS */}
       <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] ${currentTheme.blob1} blur-[150px] rounded-full pointer-events-none animate-float-slow transition-colors duration-1000`}></div>
       <div className={`absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] ${currentTheme.blob2} blur-[150px] rounded-full pointer-events-none animate-float-delayed transition-colors duration-1000`}></div>
 
@@ -334,7 +333,6 @@ export default function Home() {
                   {item.prompt_type === 'image' ? <ImageIcon className="w-4 h-4 text-pink-500 mt-1 shrink-0" /> : item.prompt_type === 'video' ? <Video className="w-4 h-4 text-purple-500 mt-1 shrink-0" /> : <MessageSquare className="w-4 h-4 text-cyan-500 mt-1 shrink-0" />}
                   <p className={`text-sm font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{item.original_idea}</p>
                 </div>
-                {/* NEW: DELETE BUTTON */}
                 <button onClick={(e) => handleDeletePrompt(item.id, e)} className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 text-zinc-500 hover:text-red-500">
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -351,7 +349,6 @@ export default function Home() {
               
               <div className="col-span-1 lg:col-span-2 flex flex-col gap-8">
                 
-                {/* 1. INPUT BOX */}
                 <div className={`backdrop-blur-md ${themeCardBg} border rounded-3xl p-6 sm:p-8 transition-colors duration-500`}>
                   <div className={`flex gap-2 p-1 border rounded-xl mb-6 w-fit transition-colors duration-500 ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
                     <button onClick={() => { playClickSound(); setMode('text'); }} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 active:scale-95 ${mode === 'text' ? (isDark ? 'bg-cyan-500/20 text-cyan-300' : 'bg-cyan-100 text-cyan-700 shadow-sm') : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700')}`}><Type className="w-4 h-4" /> Text</button>
@@ -361,7 +358,6 @@ export default function Home() {
                   <h1 className={`text-3xl font-bold mb-2 ${themeTextMain}`}>Craft the Perfect Prompt.</h1>
                   <p className={`${themeTextMuted} mb-6 text-sm`}>Dump your messy thoughts below. We will optimize it for {mode === 'text' ? 'ChatGPT/Claude' : mode === 'image' ? 'Midjourney/DALL-E' : 'Sora/Runway'}.</p>
                   
-                  {/* Dynamic Focus Rings */}
                   <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder={`What do you want to ${mode === 'text' ? 'write or build' : mode === 'image' ? 'see' : 'direct'}?`} className={`w-full h-32 border rounded-2xl p-5 focus:outline-none focus:ring-2 resize-none mb-4 transition-colors ${themeInputBg} ${mode === 'text' ? 'focus:ring-cyan-500/50' : mode === 'image' ? 'focus:ring-pink-500/50' : 'focus:ring-purple-500/50'}`} />
                   
                   {mode === 'image' && (
@@ -384,7 +380,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 2. OUTPUT BOX */}
                 <div className={`backdrop-blur-md ${themeCardBg} border-l-4 rounded-3xl p-6 sm:p-8 transition-colors duration-500 ${currentTheme.border}`}>
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <label className={`text-sm font-bold flex items-center gap-2 uppercase tracking-wider transition-colors duration-500 ${currentTheme.icon}`}>
@@ -410,7 +405,6 @@ export default function Home() {
 
               </div>
 
-              {/* Right Column: Tips & DASHBOARD */}
               <div className="col-span-1 hidden lg:flex flex-col gap-6">
                 
                 <div className={`backdrop-blur-md bg-gradient-to-br ${isDark ? 'from-white/5 to-black border-white/10' : 'from-white to-slate-50 border-slate-200 shadow-lg'} border rounded-3xl p-6 h-48 transition-colors duration-500`}>
@@ -465,7 +459,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* --- BOTTOM SECTION: EDUCATIONAL --- */}
             <div className="mt-24 mb-12 animate-in fade-in duration-700">
               <div className="text-center mb-16">
                 <h2 className={`text-3xl md:text-4xl font-bold text-transparent bg-clip-text transition-colors duration-500 ${isDark ? 'bg-gradient-to-r from-white to-zinc-400' : 'bg-gradient-to-r from-slate-900 to-slate-500'} mb-4`}>Why Prompt Engineering Matters.</h2>
@@ -512,7 +505,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* --- SUPER-SIZED SIGNATURE FOOTER --- */}
       <footer className={`w-full py-16 mt-auto text-center border-t transition-colors duration-500 ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
         <p className={`text-3xl md:text-5xl font-extrabold tracking-widest uppercase opacity-80 text-transparent bg-clip-text bg-gradient-to-r ${currentTheme.gradient} transition-all duration-1000`}>
           Built by Pramath
