@@ -2,7 +2,7 @@
 
 Live Demo:https://prompt-architect-eta.vercel.app/
 
-Prompt Architect is a sleek, AI-powered web application designed to transform raw, unstructured thoughts into highly optimized, ready-to-use AI prompts. Built by Pramath Ram, this tool leverages Google's prompt engineering best practices—specifically the Persona, Context, Task, Constraints, and Format framework—to ensure maximum output quality from Large Language Models. 
+Prompt Architect is a sleek, AI-powered web application designed to transform raw, unstructured thoughts into highly optimized, ready-to-use AI prompts.This tool leverages Google's prompt engineering best practices—specifically the Persona, Context, Task, Constraints, and Format framework—to ensure maximum output quality from Large Language Models. 
 
 ## 🛠 Tech Stack
 
